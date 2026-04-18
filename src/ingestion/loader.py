@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Iterable
+import re
 
 from llama_index.core import SimpleDirectoryReader
 from llama_index.core.node_parser import SentenceSplitter
@@ -20,6 +21,27 @@ def _safe_int(value: object) -> int | None:
         return None
 
 
+def _coerce_page_number(value: object) -> int | None:
+    if value is None:
+        return None
+
+    if isinstance(value, int):
+        return value
+
+    if isinstance(value, str):
+        stripped = value.strip()
+        if not stripped:
+            return None
+        if stripped.isdigit():
+            return int(stripped)
+
+        match = re.search(r"(\d+)", stripped)
+        if match:
+            return int(match.group(1))
+
+    return _safe_int(value)
+
+
 def _normalize_metadata(metadata: dict | None) -> dict:
     meta = dict(metadata or {})
     file_name = (
@@ -34,7 +56,7 @@ def _normalize_metadata(metadata: dict | None) -> dict:
         meta["document"] = "unknown"
 
     page_value = meta.get("page_number") or meta.get("page_label") or meta.get("page")
-    page_int = _safe_int(page_value)
+    page_int = _coerce_page_number(page_value)
     if page_int is not None:
         meta["page"] = page_int
 
