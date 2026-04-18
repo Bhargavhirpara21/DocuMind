@@ -19,13 +19,18 @@ class QueryEngine:
     llm: object
 
 
+def _unwrap_node(item):
+    return getattr(item, "node", item)
+
+
 def _format_context(nodes) -> str:
     blocks = []
     for node in nodes:
-        meta = node.metadata or {}
+        source = _unwrap_node(node)
+        meta = source.metadata or {}
         document = meta.get("document", "unknown")
         page = meta.get("page", "na")
-        blocks.append(f"[{document} | page {page}]\n{node.text}")
+        blocks.append(f"[{document} | page {page}]\n{source.text}")
     return "\n\n".join(blocks)
 
 
@@ -33,8 +38,9 @@ def _extract_sources(nodes) -> list[dict]:
     sources = []
     seen = set()
     for node in nodes:
-        meta = node.metadata or {}
-        chunk_id = meta.get("chunk_id") or node.node_id
+        source = _unwrap_node(node)
+        meta = source.metadata or {}
+        chunk_id = meta.get("chunk_id") or getattr(source, "node_id", None)
         if chunk_id in seen:
             continue
         seen.add(chunk_id)
@@ -42,7 +48,7 @@ def _extract_sources(nodes) -> list[dict]:
             {
                 "document": meta.get("document", "unknown"),
                 "page": meta.get("page", "na"),
-                "text": node.text,
+                "text": source.text,
             }
         )
     return sources
