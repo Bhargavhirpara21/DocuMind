@@ -1,1 +1,30 @@
-[]
+[
+	{
+		"question": "What is the edition of the Product Innovations catalogue?",
+		"expected_answer": "2022-1",
+		"source_document": "product-innovations-2022-1-orderpages-en.pdf",
+		"source_page": 1,
+		"type": "factual_lookup"
+	},
+	{
+		"question": "What main manufacturing categories are listed in the table of contents?",
+		"expected_answer": "Turning, holemaking, threading, milling",
+		"source_document": "product-innovations-2022-1-orderpages-en.pdf",
+		"source_page": 1,
+		"type": "factual_lookup"
+	},
+	{
+		"question": "What phrase appears as the tagline at the top of the catalogue?",
+		"expected_answer": "MASTERPIECES OF METAL CUTTING",
+		"source_document": "product-innovations-2022-1-orderpages-en.pdf",
+		"source_page": 1,
+		"type": "factual_lookup"
+	},
+	{
+		"question": "What website is given for local contact details?",
+		"expected_answer": "walter-tools.com",
+		"source_document": "product-innovations-2022-1-orderpages-en.pdf",
+		"source_page": 2,
+		"type": "factual_lookup"
+	}
+]

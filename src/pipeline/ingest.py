@@ -11,10 +11,17 @@ from src.retrieval.vector_store import build_index
 
 
 def run_ingest(pdf_dir: Path) -> dict[str, int]:
+    return run_ingest_with_limit(pdf_dir)
+
+
+def run_ingest_with_limit(pdf_dir: Path, max_documents: int | None = None) -> dict[str, int]:
     config.ensure_dirs()
     documents = load_pdfs(pdf_dir)
     if not documents:
         return {"pdfs": 0, "chunks": 0, "vectors": 0}
+
+    if max_documents is not None:
+        documents = documents[:max_documents]
 
     nodes = chunk_documents(documents, config.CHUNK_SIZE, config.CHUNK_OVERLAP)
     embed_model = get_embedding_model()
@@ -37,9 +44,15 @@ def main() -> int:
         default=config.PDF_DIR,
         help="Directory containing PDF files.",
     )
+    parser.add_argument(
+        "--max-documents",
+        type=int,
+        default=None,
+        help="Optional limit for smoke testing a subset of loaded PDF documents.",
+    )
     args = parser.parse_args()
 
-    stats = run_ingest(args.pdf_dir)
+    stats = run_ingest_with_limit(args.pdf_dir, max_documents=args.max_documents)
     if stats["pdfs"] == 0:
         print("No PDFs found. Add files to data/pdfs and re-run.")
         return 1
