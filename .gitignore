@@ -21,6 +21,7 @@ htmlcov/
 Thumbs.db
 
 # Local data and generated indexes
+data/pdfs/
 data/chroma/
 data/bm25/
 *.sqlite3
