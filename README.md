@@ -45,6 +45,7 @@ DocuMind/
 │   └── retrieval/
 ├── frontend/
 ├── tests/
+├── evaluation/
 ├── data/
 ├── requirements.txt
 └── README.md
@@ -125,7 +126,7 @@ python -m pytest tests -v
 - Add PDF source files to `data/pdfs/`
 - Validate ingestion end to end
 - Expand tests for retrieval and query behavior
-- Add evaluation dataset and RAGAS scoring
+- Add evaluation questions and RAGAS scoring
 - Add Docker and deployment hardening
 
 ## License
