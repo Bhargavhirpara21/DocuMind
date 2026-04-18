@@ -84,6 +84,19 @@ uvicorn src.api.routes:app --reload --port 8000
 streamlit run frontend/app.py
 ```
 
+## Docker
+
+Build and run the API plus frontend with Docker Compose:
+
+```bash
+docker compose up --build
+```
+
+- API: http://localhost:8000
+- Streamlit UI: http://localhost:8501
+
+The frontend container talks to the API through the `api` service name.
+
 ## API Endpoints
 
 - `GET /api/health`
