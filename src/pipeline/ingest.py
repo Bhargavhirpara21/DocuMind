@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import gc
 import argparse
 import shutil
 from pathlib import Path
@@ -27,9 +28,11 @@ def run_ingest_with_limit(
     reset_indexes: bool = False,
 ) -> dict[str, int]:
     if reset_indexes:
+        print("Resetting existing indexes...", flush=True)
         _reset_index_storage()
 
     config.ensure_dirs()
+    print(f"Loading PDFs from {pdf_dir}...", flush=True)
     documents = load_pdfs(pdf_dir)
     if not documents:
         return {"pdfs": 0, "chunks": 0, "vectors": 0}
@@ -37,12 +40,23 @@ def run_ingest_with_limit(
     if max_documents is not None:
         documents = documents[:max_documents]
 
+    print(f"Loaded {len(documents)} PDF documents.", flush=True)
+
+    print("Chunking documents...", flush=True)
     nodes = chunk_documents(documents, config.CHUNK_SIZE, config.CHUNK_OVERLAP)
+    print(f"Created {len(nodes)} chunks.", flush=True)
+
+    print("Loading embedding model...", flush=True)
     embed_model = get_embedding_model()
 
+    print("Building Chroma index...", flush=True)
     build_index(nodes, embed_model)
+    print("Building BM25 index...", flush=True)
     build_bm25_index(nodes)
+    print("Saving BM25 index...", flush=True)
     save_bm25_index(nodes, config.BM25_PATH)
+
+    gc.collect()
 
     pdf_names = {doc.metadata.get("document") for doc in documents if doc.metadata}
     pdf_count = len({name for name in pdf_names if name})
