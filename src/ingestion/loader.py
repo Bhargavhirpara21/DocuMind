@@ -4,14 +4,9 @@ from pathlib import Path
 from typing import Iterable
 import re
 
-from llama_index.core import SimpleDirectoryReader
 from llama_index.core.node_parser import SentenceSplitter
 from llama_index.core.schema import Document, TextNode
-
-try:
-    from llama_index.readers.file import PDFReader
-except Exception:
-    from llama_index.core.readers.file import PDFReader
+from pypdf import PdfReader
 
 
 def _safe_int(value: object) -> int | None:
@@ -76,12 +71,32 @@ def load_pdfs(pdf_dir: Path) -> list[Document]:
     total_files = len(pdf_paths)
     for index, path in enumerate(pdf_paths, start=1):
         print(f"Loading PDF {index}/{total_files}: {path.name}", flush=True)
-        reader = SimpleDirectoryReader(
-            input_files=[str(path)],
-            file_extractor={".pdf": PDFReader()},
-        )
-        file_documents = reader.load_data()
-        documents.extend(file_documents)
+        reader = PdfReader(str(path))
+        total_pages = len(reader.pages)
+        for page_number, page in enumerate(reader.pages, start=1):
+            if page_number == 1 or page_number % 100 == 0 or page_number == total_pages:
+                print(
+                    f"  Page {page_number}/{total_pages} for {path.name}",
+                    flush=True,
+                )
+
+            try:
+                text = page.extract_text() or ""
+            except Exception:
+                text = ""
+
+            documents.append(
+                Document(
+                    text=text,
+                    metadata={
+                        "document": path.name,
+                        "file_name": path.name,
+                        "file_path": str(path),
+                        "page": page_number,
+                        "page_label": str(page_number),
+                    },
+                )
+            )
 
     for doc in documents:
         doc.metadata = _normalize_metadata(doc.metadata)
