@@ -32,6 +32,22 @@ def _deserialize_node(data: dict[str, Any]) -> TextNode:
     )
 
 
+def load_bm25_nodes(path: Path) -> list[TextNode]:
+    path = Path(path)
+    if not path.exists():
+        return []
+
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    return [_deserialize_node(item) for item in payload]
+
+
+def merge_bm25_nodes(existing: list[TextNode], new: list[TextNode]) -> list[TextNode]:
+    merged = {node.node_id: node for node in existing}
+    for node in new:
+        merged[node.node_id] = node
+    return list(merged.values())
+
+
 def _default_tokenizer(text: str) -> list[str]:
     return text.lower().split()
 
@@ -70,7 +86,5 @@ def save_bm25_index(nodes: list[TextNode], path: Path) -> None:
 
 
 def load_bm25_index(path: Path) -> BM25Retriever:
-    path = Path(path)
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    nodes = [_deserialize_node(item) for item in payload]
+    nodes = load_bm25_nodes(path)
     return build_bm25_index(nodes)

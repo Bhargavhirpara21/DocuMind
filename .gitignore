@@ -22,6 +22,7 @@ Thumbs.db
 
 # Local data and generated indexes
 data/pdfs/
+data/pdfs_*/
 data/chroma/
 data/bm25/
 *.sqlite3

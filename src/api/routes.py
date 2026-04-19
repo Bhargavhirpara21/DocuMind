@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from pypdf import PdfReader
 
 from src import config
-from src.pipeline.ingest import run_ingest
+from src.pipeline.ingest import run_ingest, run_upload_ingest
 from src.pipeline.query import ask as run_ask
 from src.pipeline.query import setup_query_engine
 
@@ -106,7 +106,7 @@ def upload(file: UploadFile = File(...)) -> dict:
     with dest.open("wb") as handle:
         shutil.copyfileobj(file.file, handle)
 
-    stats = run_ingest(config.PDF_DIR)
+    stats = run_upload_ingest([dest])
     if stats["pdfs"] == 0:
         raise HTTPException(status_code=400, detail="No PDFs found to ingest.")
 

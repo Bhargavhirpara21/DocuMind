@@ -3,13 +3,21 @@ from __future__ import annotations
 import gc
 import argparse
 import shutil
+from typing import Iterable
 from pathlib import Path
+
+from llama_index.core.schema import Document
 
 from src import config
 from src.embeddings.embedder import get_embedding_model
-from src.ingestion.loader import chunk_documents, load_pdfs
-from src.retrieval.bm25 import build_bm25_index, save_bm25_index
-from src.retrieval.vector_store import build_index
+from src.ingestion.loader import chunk_documents, load_pdf_paths, load_pdfs
+from src.retrieval.bm25 import (
+    build_bm25_index,
+    load_bm25_nodes,
+    merge_bm25_nodes,
+    save_bm25_index,
+)
+from src.retrieval.vector_store import build_index, get_vector_store
 
 
 def _reset_index_storage() -> None:
@@ -18,27 +26,35 @@ def _reset_index_storage() -> None:
             shutil.rmtree(path, ignore_errors=True)
 
 
-def run_ingest(pdf_dir: Path, reset_indexes: bool = False) -> dict[str, int]:
-    return run_ingest_with_limit(pdf_dir, reset_indexes=reset_indexes)
+def _delete_existing_documents(documents: list[Document]) -> None:
+    vector_store = get_vector_store()
+    document_ids: list[str] = []
+    for document in documents:
+        document_id = getattr(document, "id_", None)
+        if document_id and document_id not in document_ids:
+            document_ids.append(document_id)
+
+    for document_id in document_ids:
+        vector_store.delete(document_id)
 
 
-def run_ingest_with_limit(
-    pdf_dir: Path,
-    max_documents: int | None = None,
+def _ingest_documents(
+    documents: list[Document],
     reset_indexes: bool = False,
+    merge_bm25: bool = False,
+    replace_existing_documents: bool = False,
 ) -> dict[str, int]:
     if reset_indexes:
         print("Resetting existing indexes...", flush=True)
         _reset_index_storage()
 
     config.ensure_dirs()
-    print(f"Loading PDFs from {pdf_dir}...", flush=True)
-    documents = load_pdfs(pdf_dir)
     if not documents:
         return {"pdfs": 0, "chunks": 0, "vectors": 0}
 
-    if max_documents is not None:
-        documents = documents[:max_documents]
+    if replace_existing_documents:
+        print("Replacing existing documents in Chroma...", flush=True)
+        _delete_existing_documents(documents)
 
     print(f"Loaded {len(documents)} PDF documents.", flush=True)
 
@@ -52,9 +68,15 @@ def run_ingest_with_limit(
     print("Building Chroma index...", flush=True)
     build_index(nodes, embed_model)
     print("Building BM25 index...", flush=True)
-    build_bm25_index(nodes)
+
+    bm25_nodes = nodes
+    if merge_bm25:
+        existing_nodes = load_bm25_nodes(config.BM25_PATH)
+        bm25_nodes = merge_bm25_nodes(existing_nodes, nodes)
+
+    build_bm25_index(bm25_nodes)
     print("Saving BM25 index...", flush=True)
-    save_bm25_index(nodes, config.BM25_PATH)
+    save_bm25_index(bm25_nodes, config.BM25_PATH)
 
     gc.collect()
 
@@ -62,6 +84,40 @@ def run_ingest_with_limit(
     pdf_count = len({name for name in pdf_names if name})
 
     return {"pdfs": pdf_count, "chunks": len(nodes), "vectors": len(nodes)}
+
+
+def run_ingest(pdf_dir: Path, reset_indexes: bool = False) -> dict[str, int]:
+    return run_ingest_with_limit(pdf_dir, reset_indexes=reset_indexes)
+
+
+def run_ingest_with_limit(
+    pdf_dir: Path,
+    max_documents: int | None = None,
+    reset_indexes: bool = False,
+) -> dict[str, int]:
+    print(f"Loading PDFs from {pdf_dir}...", flush=True)
+    documents = load_pdfs(pdf_dir)
+    if not documents:
+        return {"pdfs": 0, "chunks": 0, "vectors": 0}
+
+    if max_documents is not None:
+        documents = documents[:max_documents]
+
+    return _ingest_documents(documents, reset_indexes=reset_indexes)
+
+
+def run_upload_ingest(
+    pdf_paths: Iterable[Path],
+    reset_indexes: bool = False,
+) -> dict[str, int]:
+    print("Loading uploaded PDFs...", flush=True)
+    documents = load_pdf_paths(pdf_paths)
+    return _ingest_documents(
+        documents,
+        reset_indexes=reset_indexes,
+        merge_bm25=True,
+        replace_existing_documents=True,
+    )
 
 
 def main() -> int:

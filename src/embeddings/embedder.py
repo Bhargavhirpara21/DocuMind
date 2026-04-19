@@ -7,9 +7,23 @@ except Exception:
 
 from src import config
 
+try:
+    import torch
+except Exception:
+    torch = None
+
+
+def _default_device() -> str | None:
+    if torch is not None and torch.cuda.is_available():
+        return "cuda"
+    return None
+
 
 def get_embedding_model(model_name: str | None = None) -> HuggingFaceEmbedding:
-    return HuggingFaceEmbedding(model_name=model_name or config.EMBEDDING_MODEL)
+    return HuggingFaceEmbedding(
+        model_name=model_name or config.EMBEDDING_MODEL,
+        device=_default_device(),
+    )
 
 
 def embed_texts(texts: list[str]) -> list[list[float]]:

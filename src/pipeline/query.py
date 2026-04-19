@@ -44,10 +44,14 @@ def _extract_sources(nodes) -> list[dict]:
         if chunk_id in seen:
             continue
         seen.add(chunk_id)
+        document = meta.get("document", "unknown")
+        page = meta.get("page", "na")
         sources.append(
             {
-                "document": meta.get("document", "unknown"),
-                "page": meta.get("page", "na"),
+                "document": document,
+                "page": page,
+                "citation": f"{document} (page {page})",
+                "chunk_id": chunk_id,
                 "text": source.text,
             }
         )
@@ -96,7 +100,7 @@ def main() -> int:
     if result["sources"]:
         print("Sources:")
         for source in result["sources"]:
-            print(f"- {source['document']} (page {source['page']})")
+            print(f"- {source.get('citation', f"{source['document']} (page {source['page']})")}")
     return 0
 
 

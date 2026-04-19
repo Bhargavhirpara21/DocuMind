@@ -58,6 +58,63 @@ def _normalize_metadata(metadata: dict | None) -> dict:
     return meta
 
 
+def _document_id(path: Path) -> str:
+    return path.resolve().as_posix()
+
+
+def _load_pdf(path: Path, index: int, total_files: int) -> list[Document]:
+    print(f"Loading PDF {index}/{total_files}: {path.name}", flush=True)
+    reader = PdfReader(str(path))
+    total_pages = len(reader.pages)
+    documents: list[Document] = []
+
+    for page_number, page in enumerate(reader.pages, start=1):
+        if page_number == 1 or page_number % 100 == 0 or page_number == total_pages:
+            print(
+                f"  Page {page_number}/{total_pages} for {path.name}",
+                flush=True,
+            )
+
+        try:
+            text = page.extract_text() or ""
+        except Exception:
+            text = ""
+
+        documents.append(
+            Document(
+                text=text,
+                id_=_document_id(path),
+                metadata={
+                    "document": path.name,
+                    "file_name": path.name,
+                    "file_path": str(path),
+                    "page": page_number,
+                    "page_label": str(page_number),
+                },
+            )
+        )
+
+    return documents
+
+
+def load_pdf_paths(pdf_paths: Iterable[Path]) -> list[Document]:
+    paths = [Path(path) for path in pdf_paths if Path(path).is_file()]
+    if not paths:
+        return []
+
+    sorted_paths = sorted(paths, key=lambda path: str(path))
+    total_files = len(sorted_paths)
+    documents: list[Document] = []
+
+    for index, path in enumerate(sorted_paths, start=1):
+        documents.extend(_load_pdf(path, index, total_files))
+
+    for doc in documents:
+        doc.metadata = _normalize_metadata(doc.metadata)
+
+    return documents
+
+
 def load_pdfs(pdf_dir: Path) -> list[Document]:
     pdf_dir = Path(pdf_dir)
     if not pdf_dir.exists():
@@ -67,41 +124,7 @@ def load_pdfs(pdf_dir: Path) -> list[Document]:
     if not pdf_paths:
         return []
 
-    documents: list[Document] = []
-    total_files = len(pdf_paths)
-    for index, path in enumerate(pdf_paths, start=1):
-        print(f"Loading PDF {index}/{total_files}: {path.name}", flush=True)
-        reader = PdfReader(str(path))
-        total_pages = len(reader.pages)
-        for page_number, page in enumerate(reader.pages, start=1):
-            if page_number == 1 or page_number % 100 == 0 or page_number == total_pages:
-                print(
-                    f"  Page {page_number}/{total_pages} for {path.name}",
-                    flush=True,
-                )
-
-            try:
-                text = page.extract_text() or ""
-            except Exception:
-                text = ""
-
-            documents.append(
-                Document(
-                    text=text,
-                    metadata={
-                        "document": path.name,
-                        "file_name": path.name,
-                        "file_path": str(path),
-                        "page": page_number,
-                        "page_label": str(page_number),
-                    },
-                )
-            )
-
-    for doc in documents:
-        doc.metadata = _normalize_metadata(doc.metadata)
-
-    return documents
+    return load_pdf_paths(pdf_paths)
 
 
 def chunk_documents(

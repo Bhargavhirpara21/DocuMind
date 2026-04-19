@@ -32,6 +32,8 @@ def test_ask_returns_answer_and_sources() -> None:
         {
             "document": "sample.pdf",
             "page": 12,
+            "citation": "sample.pdf (page 12)",
+            "chunk_id": "chunk-1",
             "text": "Tensile strength is 950 MPa.",
         }
     ]

@@ -8,6 +8,10 @@ import streamlit as st
 DEFAULT_API_URL = os.getenv("DOCUMIND_API_URL", "http://localhost:8000")
 
 
+def _history_key(page: str) -> str:
+    return f"history_{page.lower().replace(' & ', '_').replace(' ', '_')}"
+
+
 def _api_get(path: str, api_url: str, timeout: int = 30):
     return requests.get(f"{api_url}{path}", timeout=timeout)
 
@@ -21,9 +25,12 @@ def _render_sources(sources: list[dict]) -> None:
         return
     st.markdown("**Sources**")
     for source in sources:
-        document = source.get("document", "unknown")
-        page = source.get("page", "na")
-        st.caption(f"- {document} (page {page})")
+        citation = source.get("citation")
+        if not citation:
+            document = source.get("document", "unknown")
+            page = source.get("page", "na")
+            citation = f"{document} (page {page})"
+        st.caption(f"- {citation}")
 
 
 def _render_history(history: list[dict]) -> None:
@@ -54,15 +61,23 @@ def _load_documents(api_url: str) -> list[dict]:
     return response.json()
 
 
+def _get_history(page: str) -> list[dict]:
+    key = _history_key(page)
+    if key not in st.session_state:
+        st.session_state[key] = []
+    return st.session_state[key]
+
+
 def main() -> None:
     st.set_page_config(page_title="DocuMind", page_icon="📄", layout="wide")
     st.title("DocuMind - Manufacturing Document Q&A")
 
-    if "history" not in st.session_state:
-        st.session_state.history = []
-
     st.sidebar.header("DocuMind")
     api_url = st.sidebar.text_input("API URL", value=DEFAULT_API_URL)
+
+    upload_notice = st.session_state.pop("upload_notice", None)
+    if upload_notice:
+        st.success(upload_notice)
 
     try:
         documents = _load_documents(api_url)
@@ -77,9 +92,10 @@ def main() -> None:
         st.sidebar.caption("No documents found.")
 
     page = st.sidebar.radio("Page", ["Ask Questions", "Upload & Ask"])
+    history = _get_history(page)
 
     if page == "Ask Questions":
-        _render_history(st.session_state.history)
+        _render_history(history)
         question = st.chat_input("Ask a question")
         if question:
             with st.spinner("Thinking..."):
@@ -88,7 +104,7 @@ def main() -> None:
                 except Exception as exc:
                     st.error(f"Request failed: {exc}")
                     return
-            st.session_state.history.append(
+            history.append(
                 {
                     "question": question,
                     "answer": result.get("answer", ""),
@@ -97,18 +113,21 @@ def main() -> None:
             )
             st.rerun()
 
-    if page == "Upload & Ask":
+    elif page == "Upload & Ask":
         upload = st.file_uploader("Upload a PDF", type=["pdf"])
         if upload is not None:
             if st.button("Upload and ingest"):
                 with st.spinner("Uploading and ingesting..."):
                     try:
                         _upload_pdf(api_url, upload.name, upload.getvalue())
-                        st.success("Upload complete. You can ask questions now.")
+                        st.session_state.upload_notice = (
+                            f"Uploaded {upload.name} and refreshed the indexes."
+                        )
+                        st.rerun()
                     except Exception as exc:
                         st.error(f"Upload failed: {exc}")
                         return
-        _render_history(st.session_state.history)
+            _render_history(history)
         question = st.chat_input("Ask a question about uploaded PDFs")
         if question:
             with st.spinner("Thinking..."):
@@ -117,7 +136,7 @@ def main() -> None:
                 except Exception as exc:
                     st.error(f"Request failed: {exc}")
                     return
-            st.session_state.history.append(
+            history.append(
                 {
                     "question": question,
                     "answer": result.get("answer", ""),
