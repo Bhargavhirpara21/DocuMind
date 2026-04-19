@@ -1,58 +1,149 @@
 [
-	{
-		"question": "What is the edition of the Product Innovations catalogue?",
-		"expected_answer": "2022-1",
-		"source_document": "product-innovations-2022-1-orderpages-en.pdf",
-		"source_page": 1,
-		"type": "factual_lookup"
-	},
-	{
-		"question": "What main manufacturing categories are listed in the table of contents?",
-		"expected_answer": "Turning, holemaking, threading, milling",
-		"source_document": "product-innovations-2022-1-orderpages-en.pdf",
-		"source_page": 1,
-		"type": "factual_lookup"
-	},
-	{
-		"question": "What phrase appears as the tagline at the top of the catalogue?",
-		"expected_answer": "MASTERPIECES OF METAL CUTTING",
-		"source_document": "product-innovations-2022-1-orderpages-en.pdf",
-		"source_page": 1,
-		"type": "factual_lookup"
-	},
-	{
-		"question": "What website is given for local contact details?",
-		"expected_answer": "walter-tools.com",
-		"source_document": "product-innovations-2022-1-orderpages-en.pdf",
-		"source_page": 2,
-		"type": "factual_lookup"
-	},
-	{
-		"question": "What is the title of the milling catalogue on page 1?",
-		"expected_answer": "Catalog & technical guide Milling 2026.1",
-		"source_document": "GB-Milling-2026SN1pdf.pdf",
-		"source_page": 1,
-		"type": "factual_lookup"
-	},
-	{
-		"question": "What website is shown on the milling catalogue's third page?",
-		"expected_answer": "secotools.com",
-		"source_document": "GB-Milling-2026SN1pdf.pdf",
-		"source_page": 3,
-		"type": "factual_lookup"
-	},
-	{
-		"question": "What is the title on page 1 of the turning catalogue?",
-		"expected_answer": "Tools for turning, grooving and thread turning",
-		"source_document": "Tools for Turning-2024.pdf",
-		"source_page": 1,
-		"type": "factual_lookup"
-	},
-	{
-		"question": "What edition is listed on the turning catalogue cover?",
-		"expected_answer": "Edition 2024",
-		"source_document": "Tools for Turning-2024.pdf",
-		"source_page": 1,
-		"type": "factual_lookup"
-	}
+  {
+    "question": "What edition is shown on the cover?",
+    "expected_answer": "2026",
+    "source_document": "flyer-small-part-aero-2026-en.pdf",
+    "source_page": 1,
+    "type": "factual_lookup"
+  },
+  {
+    "question": "What application area is the flyer for?",
+    "expected_answer": "Aerospace",
+    "source_document": "flyer-small-part-aero-2026-en.pdf",
+    "source_page": 1,
+    "type": "factual_lookup"
+  },
+  {
+    "question": "Which manufacturing categories are listed on the cover?",
+    "expected_answer": "Turning, Holemaking, Threading",
+    "source_document": "flyer-small-part-aero-2026-en.pdf",
+    "source_page": 1,
+    "type": "factual_lookup"
+  },
+  {
+    "question": "What website is given for local contact details?",
+    "expected_answer": "walter-tools.com",
+    "source_document": "flyer-small-part-aero-2026-en.pdf",
+    "source_page": 2,
+    "type": "factual_lookup"
+  },
+  {
+    "question": "What is the first section listed in the table of contents?",
+    "expected_answer": "A1 - ISO turning",
+    "source_document": "flyer-small-part-aero-2026-en.pdf",
+    "source_page": 3,
+    "type": "factual_lookup"
+  },
+  {
+    "question": "What edition is shown on the cover?",
+    "expected_answer": "2026",
+    "source_document": "flyer-small-part-auto-2026-de.pdf",
+    "source_page": 1,
+    "type": "factual_lookup"
+  },
+  {
+    "question": "What application area is the flyer for?",
+    "expected_answer": "Automobil",
+    "source_document": "flyer-small-part-auto-2026-de.pdf",
+    "source_page": 1,
+    "type": "factual_lookup"
+  },
+  {
+    "question": "Which manufacturing categories are listed on the cover?",
+    "expected_answer": "Drehen, Bohren, Gewinden, Fr\u00e4sen, Aufnahmen",
+    "source_document": "flyer-small-part-auto-2026-de.pdf",
+    "source_page": 1,
+    "type": "factual_lookup"
+  },
+  {
+    "question": "What website is given for local contact details?",
+    "expected_answer": "walter-tools.com",
+    "source_document": "flyer-small-part-auto-2026-de.pdf",
+    "source_page": 2,
+    "type": "factual_lookup"
+  },
+  {
+    "question": "What product system is listed on page 3 under A2 - Stechen?",
+    "expected_answer": "Groov'tec GD-Stechsystem G5011",
+    "source_document": "flyer-small-part-auto-2026-de.pdf",
+    "source_page": 3,
+    "type": "factual_lookup"
+  },
+  {
+    "question": "What title is shown on the cover?",
+    "expected_answer": "Walter Programm und Innovationen 2026",
+    "source_document": "product-innovations-2026-1-catalog-de.pdf",
+    "source_page": 1,
+    "type": "factual_lookup"
+  },
+  {
+    "question": "What edition is shown on the cover?",
+    "expected_answer": "2026-1",
+    "source_document": "product-innovations-2026-1-catalog-de.pdf",
+    "source_page": 1,
+    "type": "factual_lookup"
+  },
+  {
+    "question": "What website is listed on page 2?",
+    "expected_answer": "walter-tools.com",
+    "source_document": "product-innovations-2026-1-catalog-de.pdf",
+    "source_page": 2,
+    "type": "factual_lookup"
+  },
+  {
+    "question": "What is the first main section on page 3?",
+    "expected_answer": "A1 - ISO-Drehen",
+    "source_document": "product-innovations-2026-1-catalog-de.pdf",
+    "source_page": 3,
+    "type": "factual_lookup"
+  },
+  {
+    "question": "What section is listed on page 4?",
+    "expected_answer": "D1 - VHM-, PKD- und Keramik-Fr\u00e4swerkzeuge",
+    "source_document": "product-innovations-2026-1-catalog-de.pdf",
+    "source_page": 4,
+    "type": "factual_lookup"
+  },
+  {
+    "question": "What tagline appears on page 5?",
+    "expected_answer": "The Peak of Productivity",
+    "source_document": "product-innovations-2026-1-catalog-de.pdf",
+    "source_page": 5,
+    "type": "factual_lookup"
+  },
+  {
+    "question": "What title is shown on the cover?",
+    "expected_answer": "Product highlights",
+    "source_document": "product-innovations-2026-1-highlight-en.pdf",
+    "source_page": 1,
+    "type": "factual_lookup"
+  },
+  {
+    "question": "What phrase appears on the cover?",
+    "expected_answer": "A passion to win.",
+    "source_document": "product-innovations-2026-1-highlight-en.pdf",
+    "source_page": 1,
+    "type": "factual_lookup"
+  },
+  {
+    "question": "Which manufacturing categories are listed on the cover?",
+    "expected_answer": "Turning, holemaking, threading, milling",
+    "source_document": "product-innovations-2026-1-highlight-en.pdf",
+    "source_page": 1,
+    "type": "factual_lookup"
+  },
+  {
+    "question": "What product grades are listed first under ISO turning?",
+    "expected_answer": "Tigertec Gold turning grades WMP20G, WMP30G",
+    "source_document": "product-innovations-2026-1-highlight-en.pdf",
+    "source_page": 3,
+    "type": "factual_lookup"
+  },
+  {
+    "question": "What Groovtec item is listed under Grooving?",
+    "expected_answer": "Groov'tec GD grooving system G5011",
+    "source_document": "product-innovations-2026-1-highlight-en.pdf",
+    "source_page": 3,
+    "type": "factual_lookup"
+  }
 ]
