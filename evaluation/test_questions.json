@@ -26,5 +26,33 @@
 		"source_document": "product-innovations-2022-1-orderpages-en.pdf",
 		"source_page": 2,
 		"type": "factual_lookup"
+	},
+	{
+		"question": "What is the title of the milling catalogue on page 1?",
+		"expected_answer": "Catalog & technical guide Milling 2026.1",
+		"source_document": "GB-Milling-2026SN1pdf.pdf",
+		"source_page": 1,
+		"type": "factual_lookup"
+	},
+	{
+		"question": "What website is shown on the milling catalogue's third page?",
+		"expected_answer": "secotools.com",
+		"source_document": "GB-Milling-2026SN1pdf.pdf",
+		"source_page": 3,
+		"type": "factual_lookup"
+	},
+	{
+		"question": "What is the title on page 1 of the turning catalogue?",
+		"expected_answer": "Tools for turning, grooving and thread turning",
+		"source_document": "Tools for Turning-2024.pdf",
+		"source_page": 1,
+		"type": "factual_lookup"
+	},
+	{
+		"question": "What edition is listed on the turning catalogue cover?",
+		"expected_answer": "Edition 2024",
+		"source_document": "Tools for Turning-2024.pdf",
+		"source_page": 1,
+		"type": "factual_lookup"
 	}
 ]

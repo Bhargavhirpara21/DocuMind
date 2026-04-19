@@ -70,8 +70,10 @@ python -m pytest tests -v
 5. Run ingestion:
 
 ```bash
-python -m src.pipeline.ingest
+python -m src.pipeline.ingest --reset-indexes
 ```
+
+Use `--max-documents N` if you want a smaller smoke run while iterating.
 
 6. Start the API:
 
@@ -119,6 +121,16 @@ Run:
 
 ```bash
 python -m pytest tests -v
+```
+
+## Evaluation
+
+The starter evaluation set lives in `evaluation/test_questions.json`.
+
+Run:
+
+```bash
+python evaluation/evaluate.py
 ```
 
 ## Next Milestones

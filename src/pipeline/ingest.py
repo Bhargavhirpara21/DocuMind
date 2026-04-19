@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import shutil
 from pathlib import Path
 
 from src import config
@@ -10,11 +11,24 @@ from src.retrieval.bm25 import build_bm25_index, save_bm25_index
 from src.retrieval.vector_store import build_index
 
 
-def run_ingest(pdf_dir: Path) -> dict[str, int]:
-    return run_ingest_with_limit(pdf_dir)
+def _reset_index_storage() -> None:
+    for path in (config.CHROMA_DIR, config.BM25_DIR):
+        if path.exists():
+            shutil.rmtree(path, ignore_errors=True)
 
 
-def run_ingest_with_limit(pdf_dir: Path, max_documents: int | None = None) -> dict[str, int]:
+def run_ingest(pdf_dir: Path, reset_indexes: bool = False) -> dict[str, int]:
+    return run_ingest_with_limit(pdf_dir, reset_indexes=reset_indexes)
+
+
+def run_ingest_with_limit(
+    pdf_dir: Path,
+    max_documents: int | None = None,
+    reset_indexes: bool = False,
+) -> dict[str, int]:
+    if reset_indexes:
+        _reset_index_storage()
+
     config.ensure_dirs()
     documents = load_pdfs(pdf_dir)
     if not documents:
@@ -50,9 +64,18 @@ def main() -> int:
         default=None,
         help="Optional limit for smoke testing a subset of loaded PDF documents.",
     )
+    parser.add_argument(
+        "--reset-indexes",
+        action="store_true",
+        help="Remove existing ChromaDB and BM25 indexes before ingesting.",
+    )
     args = parser.parse_args()
 
-    stats = run_ingest_with_limit(args.pdf_dir, max_documents=args.max_documents)
+    stats = run_ingest_with_limit(
+        args.pdf_dir,
+        max_documents=args.max_documents,
+        reset_indexes=args.reset_indexes,
+    )
     if stats["pdfs"] == 0:
         print("No PDFs found. Add files to data/pdfs and re-run.")
         return 1
