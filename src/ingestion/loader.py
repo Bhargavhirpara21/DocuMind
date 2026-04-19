@@ -72,11 +72,16 @@ def load_pdfs(pdf_dir: Path) -> list[Document]:
     if not pdf_paths:
         return []
 
-    reader = SimpleDirectoryReader(
-        input_files=[str(path) for path in pdf_paths],
-        file_extractor={".pdf": PDFReader()},
-    )
-    documents = reader.load_data()
+    documents: list[Document] = []
+    total_files = len(pdf_paths)
+    for index, path in enumerate(pdf_paths, start=1):
+        print(f"Loading PDF {index}/{total_files}: {path.name}", flush=True)
+        reader = SimpleDirectoryReader(
+            input_files=[str(path)],
+            file_extractor={".pdf": PDFReader()},
+        )
+        file_documents = reader.load_data()
+        documents.extend(file_documents)
 
     for doc in documents:
         doc.metadata = _normalize_metadata(doc.metadata)
