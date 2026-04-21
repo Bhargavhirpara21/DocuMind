@@ -58,8 +58,11 @@ def _normalize_metadata(metadata: dict | None) -> dict:
     return meta
 
 
-def _document_id(path: Path) -> str:
-    return path.resolve().as_posix()
+def _document_id(path: Path, page_number: int | None = None) -> str:
+    base_id = path.resolve().as_posix()
+    if page_number is None:
+        return base_id
+    return f"{base_id}::page-{page_number}"
 
 
 def _load_pdf(path: Path, index: int, total_files: int) -> list[Document]:
@@ -83,7 +86,7 @@ def _load_pdf(path: Path, index: int, total_files: int) -> list[Document]:
         documents.append(
             Document(
                 text=text,
-                id_=_document_id(path),
+                id_=_document_id(path, page_number),
                 metadata={
                     "document": path.name,
                     "file_name": path.name,
