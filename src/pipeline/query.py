@@ -13,6 +13,15 @@ from src.retrieval.hybrid import get_hybrid_retriever
 from src.retrieval.vector_store import load_index
 
 
+_RATE_LIMIT_MARKERS = (
+    "429",
+    "quota",
+    "rate limit",
+    "rate-limit",
+    "too many requests",
+)
+
+
 @dataclass
 class QueryEngine:
     retriever: object
@@ -58,6 +67,18 @@ def _extract_sources(nodes) -> list[dict]:
     return sources
 
 
+def _is_rate_limited_error(exc: Exception) -> bool:
+    message = str(exc).lower()
+    return any(marker in message for marker in _RATE_LIMIT_MARKERS)
+
+
+def _rate_limit_fallback_answer() -> str:
+    return (
+        "The Gemini API quota was exceeded while generating this answer. "
+        "Retrieved sources are listed below."
+    )
+
+
 def setup_query_engine() -> QueryEngine:
     embed_model = get_embedding_model()
     vector_index = load_index(embed_model)
@@ -84,7 +105,15 @@ def ask(question: str, engine: QueryEngine | None = None) -> dict:
 
     context = _format_context(nodes)
     prompt = format_prompt(context=context, question=question)
-    response = engine.llm.complete(prompt)
+    try:
+        response = engine.llm.complete(prompt)
+    except Exception as exc:
+        if not _is_rate_limited_error(exc):
+            raise
+        return {
+            "answer": _rate_limit_fallback_answer(),
+            "sources": _extract_sources(nodes),
+        }
     answer = getattr(response, "text", str(response))
 
     return {"answer": answer, "sources": _extract_sources(nodes)}

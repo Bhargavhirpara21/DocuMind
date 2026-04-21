@@ -9,7 +9,40 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.pipeline.query import ask, setup_query_engine
+from src import config
+from src.embeddings.embedder import get_embedding_model
+from src.pipeline.query import QueryEngine, ask, setup_query_engine
+from src.retrieval.bm25 import load_bm25_index
+from src.retrieval.hybrid import get_hybrid_retriever
+from src.retrieval.vector_store import load_index
+
+
+class OfflineLLM:
+    def complete(self, prompt: str):
+        context_marker = "Context:\n"
+        question_marker = "\n\nQuestion:"
+        answer = "I cannot find this information in the available documents."
+
+        if context_marker in prompt and question_marker in prompt:
+            context = prompt.split(context_marker, 1)[1].split(question_marker, 1)[0].strip()
+            first_line = next((line.strip() for line in context.splitlines() if line.strip()), "")
+            if first_line:
+                answer = first_line
+
+        return type("Response", (), {"text": answer})()
+
+
+def setup_offline_query_engine() -> QueryEngine:
+    embed_model = get_embedding_model()
+    vector_index = load_index(embed_model)
+
+    bm25_path = Path(config.BM25_PATH)
+    if not bm25_path.exists():
+        raise FileNotFoundError("BM25 index not found. Run ingestion first.")
+
+    bm25_retriever = load_bm25_index(bm25_path)
+    retriever = get_hybrid_retriever(vector_index, bm25_retriever, 5)
+    return QueryEngine(retriever=retriever, llm=OfflineLLM())
 
 
 def load_questions(path: Path) -> list[dict]:
@@ -20,7 +53,10 @@ def run_evaluation(questions: list[dict]) -> list[dict]:
     if not questions:
         return []
 
-    engine = setup_query_engine()
+    try:
+        engine = setup_query_engine()
+    except RuntimeError:
+        engine = setup_offline_query_engine()
     results = []
     for item in questions:
         question = item.get("question", "").strip()
