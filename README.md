@@ -4,11 +4,11 @@ DocuMind is a retrieval-augmented generation system for manufacturing documents.
 
 ## Current Status
 
-- Phase 1: Core ingestion modules implemented
-- Phase 2: Query pipeline implemented
-- Phase 3: FastAPI and Streamlit scaffolding implemented
-- GitHub repository published on `main`
-- PDFs still need to be added to `data/pdfs/` before end-to-end ingestion can run
+- Core ingestion, hybrid retrieval, FastAPI, and Streamlit are implemented
+- The current workspace uses a 4-PDF public manufacturing corpus
+- ChromaDB and BM25 indexes are rebuilt locally and the live ask flow works
+- GitHub repository is published on `main`
+- Remaining work is deployment hardening, final docs polish, and optional corpus expansion
 
 ## Features
 
@@ -66,7 +66,7 @@ python -m pip install -r requirements.txt
 python -m pytest tests -v
 ```
 
-4. Add PDFs to `data/pdfs/`.
+4. Put your PDFs in `data/pdfs/` if you want to change the corpus. The repository already includes a working sample set.
 5. Run ingestion:
 
 ```bash
@@ -133,13 +133,15 @@ Run:
 python evaluation/evaluate.py
 ```
 
+The script writes `evaluation/results.json` locally.
+
 ## Next Milestones
 
-- Add PDF source files to `data/pdfs/`
-- Validate ingestion end to end
-- Expand tests for retrieval and query behavior
-- Add evaluation questions and RAGAS scoring
-- Add Docker and deployment hardening
+- Expand or swap the PDF corpus if you want broader coverage
+- Finalize the evaluation set and record repeatable quality metrics
+- Validate Docker Compose end to end
+- Add AWS deployment hardening and a public demo URL
+- Polish the README with screenshots, a live demo link, and final evaluation results
 
 ## License
 
