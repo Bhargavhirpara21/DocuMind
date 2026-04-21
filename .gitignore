@@ -25,6 +25,7 @@ data/pdfs/
 data/pdfs_*/
 data/chroma/
 data/bm25/
+evaluation/results.json
 *.sqlite3
 *.db
 
