@@ -28,6 +28,13 @@ class QueryEngine:
     llm: object
 
 
+class _EmptyBm25Retriever:
+    nodes: list[object] = []
+
+    def retrieve(self, query: str, top_k: int = 5) -> list[object]:
+        return []
+
+
 def _unwrap_node(item):
     return getattr(item, "node", item)
 
@@ -83,9 +90,10 @@ def setup_query_engine() -> QueryEngine:
     embed_model = get_embedding_model()
     vector_index = load_index(embed_model)
 
-    if not Path(config.BM25_PATH).exists():
-        raise FileNotFoundError("BM25 index not found. Run ingestion first.")
-    bm25_retriever = load_bm25_index(config.BM25_PATH)
+    if Path(config.BM25_PATH).exists():
+        bm25_retriever = load_bm25_index(config.BM25_PATH)
+    else:
+        bm25_retriever = _EmptyBm25Retriever()
 
     retriever = get_hybrid_retriever(vector_index, bm25_retriever, config.TOP_K)
     llm = get_llm()

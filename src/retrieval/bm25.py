@@ -61,6 +61,10 @@ class BM25Retriever:
         self._corpus = [self._tokenizer(node.text) for node in nodes]
         self._bm25 = BM25Okapi(self._corpus) if self._corpus else None
 
+    @property
+    def nodes(self) -> list[TextNode]:
+        return list(self._nodes)
+
     def retrieve(self, query: str, top_k: int = 5) -> list[NodeWithScore]:
         if not self._bm25 or not query:
             return []
