@@ -15,6 +15,7 @@ class _QueryProfile:
     cover: bool
     toc: bool
     contact: bool
+    summary_kind: str | None
 
 
 def _get_node(item) -> object:
@@ -36,6 +37,25 @@ def _get_metadata(item) -> dict:
     return node.metadata or {}
 
 
+def _summary_kind(query: str) -> str | None:
+    normalized = query.lower()
+    if "iso turning" in normalized and (
+        "product grades" in normalized
+        or "under iso turning" in normalized
+        or "listed first under" in normalized
+    ):
+        return "product_grades"
+
+    if "grooving" in normalized and (
+        "groovtec item" in normalized
+        or "under grooving" in normalized
+        or "listed under" in normalized
+    ):
+        return "groovtec_item"
+
+    return None
+
+
 def _query_profile(query: str) -> _QueryProfile:
     normalized = query.lower()
     page_hint = None
@@ -52,6 +72,8 @@ def _query_profile(query: str) -> _QueryProfile:
             "cover",
             "title",
             "edition",
+            "application area",
+            "flyer for",
             "phrase appears on the cover",
             "shown on the cover",
         )
@@ -75,7 +97,13 @@ def _query_profile(query: str) -> _QueryProfile:
             "contact",
         )
     )
-    return _QueryProfile(page_hint=page_hint, cover=cover, toc=toc, contact=contact)
+    return _QueryProfile(
+        page_hint=page_hint,
+        cover=cover,
+        toc=toc,
+        contact=contact,
+        summary_kind=_summary_kind(query),
+    )
 
 
 def _looks_like_title(text: str) -> bool:
@@ -135,6 +163,26 @@ def _page_priority_score(item, profile: _QueryProfile) -> float:
             score += 2.5
         return score
 
+    if profile.summary_kind:
+        if page != 3:
+            return 0.0
+
+        score = 8.0
+        if profile.summary_kind == "product_grades":
+            if "wmp20g" in normalized or "wmp30g" in normalized:
+                score += 2.0
+            if "turning grades" in normalized:
+                score += 1.0
+        elif profile.summary_kind == "groovtec_item":
+            if "groov" in normalized or "g5011" in normalized:
+                score += 2.0
+            if "grooving system" in normalized:
+                score += 1.0
+
+        if _looks_like_title(text):
+            score += 1.0
+        return score
+
     if profile.contact:
         if page > 3:
             return 0.0
@@ -150,7 +198,9 @@ def _page_priority_score(item, profile: _QueryProfile) -> float:
 
 def _page_priority_candidates(query: str, items: list[object]) -> list[NodeWithScore]:
     profile = _query_profile(query)
-    if not any((profile.page_hint, profile.cover, profile.toc, profile.contact)):
+    if not any(
+        (profile.page_hint, profile.cover, profile.toc, profile.contact, profile.summary_kind)
+    ):
         return []
 
     candidates = []

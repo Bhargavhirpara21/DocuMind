@@ -85,6 +85,31 @@ def test_hybrid_retriever_prioritizes_cover_pages_for_cover_questions() -> None:
     assert [item.node.metadata["page"] for item in results][:2] == [1, 136]
 
 
+def test_hybrid_retriever_prioritizes_cover_pages_for_application_area_questions() -> None:
+    page_one = TextNode(
+        text="Turning, Holemaking, Threading Special Edition Edition 2026 Information and Order Data Small Part Machining Aerospace",
+        id_="page-1",
+        metadata={"document": "flyer.pdf", "page": 1},
+    )
+    page_late = TextNode(
+        text="Later technical content about tooling",
+        id_="page-132",
+        metadata={"document": "flyer.pdf", "page": 132},
+    )
+
+    hybrid = HybridRetriever(
+        FakeVectorIndex([NodeWithScore(node=page_late, score=1.0)]),
+        FakeBm25Retriever(
+            nodes=[page_one, page_late],
+            results=[NodeWithScore(node=page_late, score=1.0)],
+        ),
+        top_k=2,
+    )
+
+    results = hybrid.retrieve("What application area is the flyer for?")
+    assert [item.node.metadata["page"] for item in results][:2] == [1, 132]
+
+
 def test_hybrid_retriever_prioritizes_explicit_page_hints() -> None:
     page_three = TextNode(
         text="A1 - ISO turning",
@@ -108,3 +133,59 @@ def test_hybrid_retriever_prioritizes_explicit_page_hints() -> None:
 
     results = hybrid.retrieve("What product system is listed on page 3 under A2 - Stechen?")
     assert [item.node.metadata["page"] for item in results][:2] == [3, 242]
+
+
+def test_hybrid_retriever_prioritizes_page_three_for_iso_turning_summary_questions() -> None:
+    page_three = TextNode(
+        text=(
+            "3 ISO turning Page Tiger·tec® Gold turning grades WMP20G, WMP30G 4 RM7 roughing geometry "
+            "for ISO M 6 Walter Turn long turn holder P.-S-P 7 WB solid carbide mini boring bars and adaptors 8"
+        ),
+        id_="page-3",
+        metadata={"document": "highlights.pdf", "page": 3},
+    )
+    page_five = TextNode(
+        text="5 Highest repeat accuracy and stability during copy turning thanks to form-fitting WL17 cutting inserts",
+        id_="page-5",
+        metadata={"document": "highlights.pdf", "page": 5},
+    )
+
+    hybrid = HybridRetriever(
+        FakeVectorIndex([NodeWithScore(node=page_five, score=1.0)]),
+        FakeBm25Retriever(
+            nodes=[page_three, page_five],
+            results=[NodeWithScore(node=page_five, score=1.0)],
+        ),
+        top_k=2,
+    )
+
+    results = hybrid.retrieve("What product grades are listed first under ISO turning?")
+    assert [item.node.metadata["page"] for item in results][:2] == [3, 5]
+
+
+def test_hybrid_retriever_prioritizes_page_three_for_groovtec_summary_questions() -> None:
+    page_three = TextNode(
+        text=(
+            "3 ISO turning Page Tiger·tec® Gold turning grades WMP20G, WMP30G 10 Grooving Page "
+            "Groov·tec® GD grooving system G5011 12 Groov·tec® GD axial grooving system G5111"
+        ),
+        id_="page-3",
+        metadata={"document": "highlights.pdf", "page": 3},
+    )
+    page_five = TextNode(
+        text="5 Highest repeat accuracy and stability during copy turning thanks to form-fitting WL17 cutting inserts",
+        id_="page-5",
+        metadata={"document": "highlights.pdf", "page": 5},
+    )
+
+    hybrid = HybridRetriever(
+        FakeVectorIndex([NodeWithScore(node=page_five, score=1.0)]),
+        FakeBm25Retriever(
+            nodes=[page_three, page_five],
+            results=[NodeWithScore(node=page_five, score=1.0)],
+        ),
+        top_k=2,
+    )
+
+    results = hybrid.retrieve("What Groovtec item is listed under Grooving?")
+    assert [item.node.metadata["page"] for item in results][:2] == [3, 5]
