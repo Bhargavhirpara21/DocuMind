@@ -1,6 +1,6 @@
 # Plan: DocuMind — RAG-Powered Manufacturing Document Q&A System
 
-**TL;DR**: Build a retrieval-augmented generation (RAG) system that answers natural language questions from manufacturing documents (ISO standards, material datasheets, machine manuals, cutting tool catalogs). Users type a question, the system finds relevant passages using hybrid search, sends them to an LLM, and returns an answer with exact citations. Python backend, Streamlit frontend, deployed on AWS.
+**TL;DR**: Build a retrieval-augmented generation (RAG) system that answers natural language questions from manufacturing documents (ISO standards, material datasheets, machine manuals, cutting tool catalogs). Users type a question, the system finds relevant passages using hybrid search, sends them to an LLM, and returns an answer with exact citations. Python backend, Streamlit frontend, deployed on Render.
 
 **Why this project is the right fit:**
 - Demonstrates RAG expertise (the most in-demand AI engineering skill in 2026)
@@ -27,15 +27,14 @@ Phase 1: Ingestion (one-time)
 
 Phase 2: Query (every question)
 
-  User Question  -->  Hybrid Retriever  -->  Top 5 Chunks  -->  LLM (Gemini)  -->  Answer + Citations
-                      (vector + BM25)       with metadata       (generate           (source doc + page)
-                                                                 answer)
+  User Question  -->  Hybrid Retriever  -->  Top 5 Chunks  -->  Direct Rules / Answer Mode  -->  Answer + Citations
+                      (vector + BM25)       with metadata       (local default; Gemini or     (source doc + page)
+                                                                 Ollama optional)
 
 Infrastructure:
 
-  FastAPI (REST API)  |  Streamlit (Demo UI)  |  Docker  |  AWS EC2  |  RAGAS (Evaluation)
+  FastAPI (REST API)  |  Streamlit (Demo UI)  |  Docker  |  Render  |  Answer Collection (Evaluation)
 ```
-
 ---
 
 ## Tech Stack
@@ -47,13 +46,14 @@ Infrastructure:
 | Embedding Model | jina-embeddings-v2-base-de | Bilingual German-English, 768 dims, 8192 token context |
 | Vector Database | ChromaDB | Simple setup, good for prototyping |
 | Keyword Search | BM25 (via rank_bm25) | Exact matching for part numbers, ISO codes |
-| Primary LLM | Google Gemini 2.5 Flash (free API) | 250 req/day free, no credit card needed |
-| Local LLM (fallback) | Ollama + Mistral 7B | Offline capability, portfolio value |
+| Production answer mode | Local extractive answering | No external quota, deterministic public demo behavior |
+| Optional cloud LLM | Google Gemini 2.5 Flash | Useful for comparison when an API key is available |
+| Local LLM option | Ollama + Gemma | Local experimentation on machines with enough resources |
 | Backend API | FastAPI + Uvicorn | You already know it, fast, auto-docs |
 | Frontend | Streamlit | Quick demo UI, free cloud hosting option |
-| Evaluation | RAGAS | Industry-standard RAG evaluation metrics |
+| Evaluation | Answer collection runner | Repeatable question set with expected answers and sources |
 | Containerization | Docker + Docker Compose | Reproducible deployment |
-| Cloud | AWS EC2 (free tier) | Real cloud deployment experience |
+| Cloud | Render | Real cloud deployment experience |
 | Version Control | Git + GitHub | Code hosting, CI/CD |
 
 ---
@@ -267,8 +267,8 @@ Answer:
 2. Hybrid retriever searches ChromaDB + BM25
 3. Top 5 chunks returned with metadata
 4. Chunks + question formatted using prompt template
-5. Sent to LLM (Gemini)
-6. LLM generates answer
+5. Direct-answer rules try known deterministic extraction cases
+6. If no rule matches, the selected answer provider generates an answer
 7. Citations extracted from chunk metadata
 8. Return: answer + list of sources (document name, page number, relevant text)
 ```
@@ -368,41 +368,55 @@ Answer:
 ]
 ```
 
-**Key detail**: You create these manually by reading your PDFs and writing questions with known answers. This is the ground truth that RAGAS uses to score your system.
+**Key detail**: You create these manually by reading your PDFs and writing questions with known answers. This is the ground truth used to review collected answers and sources.
 
 ---
 
 ### File: evaluation/evaluate.py
-**Purpose**: Run RAGAS evaluation on all test questions and produce a quality report.
+**Purpose**: Run the evaluation question set through the current query pipeline and collect answers, sources, and expected-answer metadata.
 
 **What it does**:
 ```
 1. Load test questions from test_questions.json
 2. Run each question through the query pipeline
-3. RAGAS scores each response on 4 metrics:
-   - Context Precision: Did we retrieve the right chunks?
-   - Context Recall: Did we find ALL relevant chunks?
-   - Faithfulness: Does the answer only use info from chunks (no hallucination)?
-   - Answer Relevancy: Does the answer actually address the question?
-4. Output: summary table + per-question breakdown
+3. Save each response with retrieved sources, expected answer, expected source document, expected source page, and question type.
+4. Compare the collected output manually or with a future scoring script.
 ```
 
-**Packages**: ragas, datasets
-
-**Output example**:
-```
-RAGAS Evaluation Results (40 questions)
-=======================================
-Context Precision:  0.82
-Context Recall:     0.78
-Faithfulness:       0.91
-Answer Relevancy:   0.88
-Overall Score:      0.85
-```
+RAGAS can still be added later if metric scoring becomes a project requirement.
 
 ---
 
 ## Phase 5: Docker + Deployment (Days 12-14)
+
+### Deployment Runtime Decision
+
+Use Render web services as the cloud deployment path.
+
+Why this path:
+- It matches the existing `Dockerfile` and local `docker-compose.yml`.
+- It packages the API and Streamlit UI into a repeatable artifact.
+- It is easier to document, restart, and move between environments than a manual VM setup.
+
+Recommended layout:
+- API web service with a persistent disk mounted at `/app/data`.
+- Frontend web service pointed at the API service URL.
+
+Fallback only if Render is blocked by policy or ops constraints:
+- Plain Python service on a VM with the same app code and environment variables.
+
+### Deployment LLM Decision
+
+Use the local extractive answer mode in production (`LLM_PROVIDER=local`).
+
+Why this path:
+- It does not depend on Gemini quota or a separate paid API key.
+- It does not require running Ollama or downloading a model on the cloud host.
+- It is deterministic and stable for the public demo link.
+
+Optional developer-only alternatives:
+- Gemini for ad hoc testing when a key is available.
+- Ollama for local experimentation on a machine with enough resources.
 
 ### File: Dockerfile
 **Purpose**: Packages the entire application into a container.
@@ -438,19 +452,19 @@ services:
 
 ---
 
-### AWS Deployment (EC2 Free Tier)
+### Render Deployment (Web Services)
 
 **Steps**:
-1. Create AWS account (sign up with university email for AWS Educate credits)
-2. Launch EC2 instance: t2.micro (free tier), Ubuntu 24.04, 20GB storage
-3. Configure security group: open ports 22 (SSH), 8000 (API), 8501 (Streamlit)
-4. SSH into instance, install Docker
-5. Clone your GitHub repo
-6. Create .env file with your Gemini API key
-7. Run `docker-compose up -d`
-8. Access your app at http://YOUR-EC2-IP:8501
+1. Create a Render account and connect your GitHub repo.
+2. Create an API web service from this repository.
+3. Set the API start command to `uvicorn src.api.routes:app --host 0.0.0.0 --port $PORT`.
+4. Attach a persistent disk to the API service and mount it at `/app/data`.
+5. Copy `.env.example` into the service environment and keep `LLM_PROVIDER=local`.
+6. Create a Streamlit web service from the same repository.
+7. Set the Streamlit start command to `streamlit run frontend/app.py --server.address 0.0.0.0 --server.port $PORT`.
+8. Point `DOCUMIND_API_URL` in the frontend service at the Render API service URL.
 
-**Result**: A public URL (IP address) where anyone can use DocuMind.
+**Result**: A public Render URL for the frontend, with durable API storage for Chroma, BM25, and uploads.
 
 ---
 
@@ -460,13 +474,13 @@ services:
 **Purpose**: Professional documentation. Must include:
 
 1. Project title + one-line description
-2. Live demo link (AWS URL)
+2. Live demo link (Render URL)
 3. Architecture diagram (ASCII or image)
 4. Features list
 5. Tech stack table
 6. Quick start (local + Docker)
 7. API endpoints table
-8. RAGAS evaluation results
+8. Evaluation results from the collected-answer runner
 9. Screenshots or demo GIF
 10. Project structure
 11. License
@@ -556,7 +570,7 @@ documind/
 │
 ├── evaluation/
 │   ├── test_questions.json        # Ground truth Q&A pairs
-│   └── evaluate.py                # RAGAS evaluation script
+│   └── evaluate.py                # Evaluation answer-collection script
 │
 └── scripts/
     └── ingest.py                  # CLI entry point for ingestion
@@ -576,16 +590,16 @@ Build and test each file in this exact order:
 | 4 | src/retrieval/vector_store.py | Stores chunks in ChromaDB, data/chroma/ folder created |
 | 5 | src/retrieval/bm25.py | Searches by keyword, finds correct chunks |
 | 6 | src/pipeline/ingest.py | Runs full ingestion: load, chunk, embed, store |
-| 7 | src/generation/llm.py | Sends test question to Gemini, gets response |
+| 7 | src/generation/llm.py | Selects local, Gemini, or Ollama answer provider |
 | 8 | src/generation/prompt.py | Prompt template renders correctly with test data |
 | 9 | src/retrieval/hybrid.py | Hybrid search returns results from both vector and BM25 |
 | 10 | src/pipeline/query.py | End-to-end: question -> answer with citations |
 | 11 | src/api/routes.py | All API endpoints work via http://localhost:8000/docs |
 | 12 | frontend/app.py | Streamlit UI shows, can ask questions, sees citations |
 | 13 | tests/ | All pytest tests pass |
-| 14 | evaluation/ | RAGAS scores generated for all test questions |
+| 14 | evaluation/ | Evaluation answers collected for all test questions |
 | 15 | Dockerfile + docker-compose.yml | docker-compose up works, app accessible |
-| 16 | AWS deployment | App accessible via public EC2 IP |
+| 16 | Render deployment | App accessible via public Render URL |
 | 17 | README.md | Complete documentation with demo link, screenshots |
 
 ---
@@ -597,13 +611,14 @@ Build and test each file in this exact order:
 | RAG framework | LlamaIndex | Purpose-built for RAG, 30-40% less code | LangChain |
 | Embedding model | jina-embeddings-v2-base-de | Bilingual DE/EN, 768d, 8192 token context | OpenAI embeddings (paid) |
 | Vector database | ChromaDB | Simple setup, good for prototyping | Qdrant, pgvector |
-| Primary LLM | Gemini 2.5 Flash (free API) | 250 req/day free, good quality | GPT-4o (paid), Ollama (local) |
-| Local LLM fallback | Ollama + Mistral 7B | Offline capability, portfolio value | None |
+| Production answer mode | Local extractive answering | Stable no-quota cloud behavior | Gemini, Ollama |
+| Optional cloud LLM | Gemini 2.5 Flash | Good comparison mode when a key is available | GPT-4o (paid), Ollama (local) |
+| Local LLM option | Ollama + Gemma | Local experimentation | None |
 | Retrieval strategy | Hybrid (vector + BM25) | Manufacturing docs need exact code matching | Vector only |
 | Backend | FastAPI | Fast, auto-docs, you know it well | Flask |
 | Frontend | Streamlit | Quick demo UI, free cloud hosting | React (overkill for demo) |
-| Evaluation | RAGAS | Industry-standard RAG metrics | Manual testing only |
-| Cloud | AWS EC2 free tier | Real cloud experience for CV | Streamlit Cloud, Render |
+| Evaluation | Answer collection runner | Repeatable regression set without LLM-judge dependency | RAGAS later |
+| Cloud | Render | Real cloud deployment experience for CV | Self-managed VM |
 | Chunking | 512 tokens, 50 overlap | Balance of precision and context | 256 or 1024 |
 
 ---
@@ -622,8 +637,8 @@ Before considering the project complete:
 8. **API works**: All endpoints respond correctly (test via /docs)
 9. **UI works**: Streamlit shows questions, answers, and citations cleanly
 10. **Docker works**: docker-compose up starts everything
-11. **AWS works**: App accessible via public URL
-12. **RAGAS scores**: Faithfulness > 0.85, Context Precision > 0.75
+11. **Render works**: App accessible via public URL
+12. **Evaluation output**: Collected answers and sources reviewed against expected answers
 13. **Tests pass**: pytest tests/ passes with no failures
 14. **README is complete**: Someone can understand, run, and deploy from README alone
 15. **Demo GIF**: Shows the system in action (record with ScreenToGif or similar)

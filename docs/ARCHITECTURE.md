@@ -17,8 +17,9 @@ DocuMind is a RAG system for manufacturing PDFs. It is organized around two main
 
 - Receive a question from the API or UI
 - Retrieve top chunks using hybrid search
-- Format a grounded prompt with context and question
-- Send the prompt to the selected LLM
+- Try deterministic direct-answer rules for known page-aware brochure questions
+- If no direct rule applies, format a grounded prompt with context and question
+- Send the prompt to the selected answer provider
 - Return an answer with source metadata
 
 ## Design Choices
@@ -28,7 +29,8 @@ DocuMind is a RAG system for manufacturing PDFs. It is organized around two main
 - Use ChromaDB for local persistent vector storage
 - Use BM25 for code-heavy manufacturing terms
 - Use hybrid retrieval because technical documents often require both semantic search and exact matching
-- Keep the LLM provider abstract so Gemini and Ollama can be swapped without changing the pipeline
+- Keep the answer provider abstract so the local extractive default, Gemini, and Ollama can be swapped without changing the pipeline
+- Use local extractive answering as the production default to avoid external quota and cloud model-hosting dependencies
 
 ## Operational Notes
 

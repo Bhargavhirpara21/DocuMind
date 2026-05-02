@@ -11,6 +11,7 @@ env/
 
 # Test and coverage artifacts
 .pytest_cache/
+.pytest-tmp/
 .coverage
 htmlcov/
 
